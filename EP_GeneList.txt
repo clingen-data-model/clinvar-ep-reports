@@ -12,8 +12,8 @@ MLH1	InSiGHT
 MSH2	InSiGHT
 MSH6	InSiGHT
 PMS2	InSiGHT
-BRCA1	ENIGMA
-BRCA2	ENIGMA
+BRCA1	Evidence_based_Network_for_the_Interpretation
+BRCA2	Evidence_based_Network_for_the_Interpretation
 PAH	PAH
 CDH1	CDH1
 PTEN	PTEN
@@ -46,7 +46,11 @@ GCK	Monogenic_Diabetes
 HNF1B	Monogenic_Diabetes
 INS	Monogenic_Diabetes
 KCNJ11	Monogenic_Diabetes
-ABCC8	 Monogenic_Diabetes
+ABCC8	Monogenic_Diabetes
+BLK	Monogenic_Diabetes
+HNF1A	Monogenic_Diabetes
+KLF11	Monogenic_Diabetes
+PAX4	Monogenic_Diabetes
 LDLR	FH
 APOB	FH
 PCSK9	FH

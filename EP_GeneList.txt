@@ -8,10 +8,10 @@ HRAS	RASopathy
 MAP2K2	RASopathy
 MAP2K1	RASopathy
 KRAS	RASopathy
-MLH1	InSiGHT
-MSH2	InSiGHT
-MSH6	InSiGHT
-PMS2	InSiGHT
+MLH1	International_Society_for_Gastrointestinal_He
+MSH2	International_Society_for_Gastrointestinal_He
+MSH6	International_Society_for_Gastrointestinal_He
+PMS2	International_Society_for_Gastrointestinal_He
 BRCA1	Evidence_based_Network_for_the_Interpretation
 BRCA2	Evidence_based_Network_for_the_Interpretation
 PAH	PAH

@@ -144,7 +144,7 @@ def create_scvHash(gzfile):
                         scvHash[varID][SCV] = {'ClinSig':clinSig, 'DateLastEval':dateLastEval, 'Submitter':submitter, 'ReviewStatus':revStat}
 
     #Add VCEPs that are not yet approved and have no variants in ClinVar
-    new = ['Monogenic_Diabetes', 'Brain_Malformations', 'FH', 'KCNQ1', 'FBN1','TP53', 'Myeloid_Malignancy', 'HBOPC', 'VHL', 'LSD', 'Rett_Angelman_like_Disorders', 'Platelet_Disorders', 'Chondrodysplasia_punctata', 'Craniosynostosis']
+    new = ['Monogenic_Diabetes', 'Brain_Malformations', 'FH', 'KCNQ1', 'FBN1', 'HBOPC', 'VHL', 'LSD', 'Rett_Angelman_like_Disorders', 'Platelet_Disorders', 'Chondrodysplasia_punctata', 'Craniosynostosis']
     for i in new:
         EPList[i] = 'None'
 

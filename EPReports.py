@@ -1,13 +1,12 @@
 import xml.etree.ElementTree as ET
 from ftplib import FTP
 import datetime
-import time
 import os
 import sys
-import csv
 import gzip
+import numbers
 import re
-import pprint
+import xlrd
 import xlsxwriter
 
 orgDict = {}
@@ -16,7 +15,7 @@ a2vHash = {}
 HGVSHash = {}
 EPHash = {}
 EPList = {}
-geneHash = {}
+EPGeneHash = {}
 geneList = []
 today = datetime.datetime.today().strftime('%Y%m%d') #todays date YYYYMMDD
 
@@ -117,7 +116,7 @@ def create_scvHash(gzfile):
                     dateLastEval = convert_date(rawDate) #convert date eg May 02, 2018 -> YYYYMMDD
                     revStat = col[6]
 
-                    submitter = col[9]
+                    submitter = name_mangle(col[9])
                     submitter = submitter.rstrip()
                     submitter = re.sub('[^0-9a-zA-Z]+', '_', submitter)
 
@@ -132,7 +131,7 @@ def create_scvHash(gzfile):
                         orgID = 'None'
 
                     if revStat == 'reviewed by expert panel' and 'PharmGKB' not in submitter: #-- to exclude PharmGKB records
-                        EPHash[varID] = {'ClinSig':clinSig, 'Submitter':submitter, 'DateLastEval':dateLastEval}
+                        EPHash[varID] = {'ClinSig':clinSig, 'Submitter':submitter, 'OrgID':orgID, 'DateLastEval':dateLastEval}
 
                         if submitter not in EPList:
                             EPList[submitter] = orgID
@@ -142,11 +141,6 @@ def create_scvHash(gzfile):
                             scvHash[varID] = {}
 
                         scvHash[varID][SCV] = {'ClinSig':clinSig, 'DateLastEval':dateLastEval, 'Submitter':submitter, 'ReviewStatus':revStat}
-
-    #Add VCEPs that are not yet approved and have no variants in ClinVar
-    new = ['Monogenic_Diabetes', 'Brain_Malformations', 'FH', 'KCNQ1', 'FBN1', 'HBOPC', 'VHL', 'LSD', 'Rett_Angelman_like_Disorders', 'Platelet_Disorders', 'Chondrodysplasia_punctata', 'Craniosynostosis']
-    for i in new:
-        EPList[i] = 'None'
 
     input.close()
     os.remove(gzfile)
@@ -219,11 +213,55 @@ def create_geneList(file):
                     geneSym = re.sub(r'\s+', '', geneSym)
                     EPname = col[1]
                     EPname = re.sub(r'\W+', '', EPname) #remove all non-alphanumerics
-                    geneHash[geneSym] = EPname
                     geneList.append(geneSym)
 
     input.close()
-    return(geneList, geneHash)
+    return(geneList)
+
+def create_geneList2(vcep_org_file_xlsx):
+    """
+    Accepts an .xslx file and returns a dictionary of
+    organization id -> email address pairs.
+    """
+    orgs = {}
+    wb = xlrd.open_workbook(vcep_org_file_xlsx)
+    sheet = wb.sheet_by_index(0)
+
+    assert sheet.cell_value(0, 0) == "Gene", \
+        "Spreadsheet " + vcep_org_file_xlsx + " is not in the format expected by this program"
+
+    for i in range(1, sheet.nrows):
+        geneSym = sheet.cell_value(i, 0)
+        orgName = sheet.cell_value(i, 1)
+        orgID = sheet.cell_value(i, 2)
+        geneList.append(geneSym)
+        submitter = name_mangle(orgName)
+        if isinstance(orgID, numbers.Number):
+            value = orgID
+            for EP in EPList:
+                if EPList[EP] == orgID:
+                    submitter = EP
+                    break
+        else:
+            value = 'None'
+
+        if submitter not in EPList:
+            EPList[submitter] = value
+
+        if submitter in EPGeneHash:
+            EPGeneHash[submitter].append(geneSym)
+        else:
+            EPGeneHash[submitter] = [geneSym]
+
+    return(geneList, EPGeneHash)
+
+
+def name_mangle(orgName):
+    mangledName = orgName.rstrip()
+    mangledName = re.sub('[^0-9a-zA-Z]+', '_', mangledName)
+    mangledName = mangledName[0:45]
+
+    return (mangledName)
 
 
 def create_files(ExcelDir, excelFile, date, statFile):
@@ -279,8 +317,11 @@ def create_EPfiles(ExcelDir, excelFile, date, workbookStat, worksheetStat0):
     for EP in EPList:
 
         count += 1
+
+        EPOrgID = EPList[EP]
+
         worksheetStat0.write(count, 0, EP)
-        worksheetStat0.write(count, 1, EPList[EP])
+        worksheetStat0.write(count, 1, EPOrgID)
 
         EP_output_file = dir + '/' + EP + '[' + str(EPList[EP]) + ']_' + excelFile
 
@@ -304,14 +345,14 @@ def create_EPfiles(ExcelDir, excelFile, date, workbookStat, worksheetStat0):
         tabList = [create_tab1, create_tab2, create_tab3, create_tab4, create_tab5, create_tab6, create_tab7, create_tab8]
 
         for tab in tabList:
-            tab(EP, workbook, worksheet0, worksheetStat0, count)
+            tab(EP, EPOrgID, workbook, worksheet0, worksheetStat0, count)
 
         workbook.close()
 
     workbookStat.close()
 
 
-def create_tab1(EP, workbook, worksheet0, worksheetStat0, count):
+def create_tab1(EP, EPOrgID, workbook, worksheet0, worksheetStat0, count):
     '''This function creates the Tab#1 Alert (EP_OutOfDate) in the Excel file'''
 
     row = 0
@@ -352,7 +393,7 @@ def create_tab1(EP, workbook, worksheet0, worksheetStat0, count):
     print_stats2file(worksheetStat0, count, 2, row)
 
 
-def create_tab2(EP, workbook, worksheet0, worksheetStat0, count):
+def create_tab2(EP, EPOrgID, workbook, worksheet0, worksheetStat0, count):
     '''This function creates the Tab#2 Alert (EP_PLPvsNewSub_VUSLBB) in the Excel file'''
 
     row = 0
@@ -400,7 +441,7 @@ def create_tab2(EP, workbook, worksheet0, worksheetStat0, count):
     print_stats2file(worksheetStat0, count, 3, row)
 
 
-def create_tab3(EP, workbook, worksheet0, worksheetStat0, count):
+def create_tab3(EP, EPOrgID, workbook, worksheet0, worksheetStat0, count):
     '''This function creates the Tab#3 Alert (EP_VUSvsNewSub_PLP) in the Excel file'''
 
     row = 0
@@ -447,7 +488,7 @@ def create_tab3(EP, workbook, worksheet0, worksheetStat0, count):
     print_stats2file(worksheetStat0, count, 4, row)
 
 
-def create_tab4(EP, workbook, worksheet0, worksheetStat0, count):
+def create_tab4(EP, EPOrgID, workbook, worksheet0, worksheetStat0, count):
     '''This function creates the Tab#4 Alert (EP_VUSvsNewSub_LBB) in the Excel file'''
 
     row = 0
@@ -494,7 +535,7 @@ def create_tab4(EP, workbook, worksheet0, worksheetStat0, count):
     print_stats2file(worksheetStat0, count, 5, row)
 
 
-def create_tab5(EP, workbook, worksheet0, worksheetStat0, count):
+def create_tab5(EP, EPOrgID, workbook, worksheet0, worksheetStat0, count):
     '''This function creates the Tab#5 Priority (PLPvsVUSLBB)in the Excel file'''
 
     row = 0
@@ -517,8 +558,7 @@ def create_tab5(EP, workbook, worksheet0, worksheetStat0, count):
 
             if ('Pathogenic' in ClinSigList or 'Likely pathogenic' in ClinSigList) \
                 and ('Uncertain significance' in ClinSigList or 'Likely benign' in ClinSigList or 'Benign' in ClinSigList) \
-                and varID in HGVSHash and HGVSHash[varID]['GeneSym'] in geneList \
-                and geneHash[HGVSHash[varID]['GeneSym']] in EP:
+                and varID in HGVSHash and HGVSHash[varID]['GeneSym'] in EPGeneHash[EP]:
                 if varID not in p2fileVarIDs:
                     p2fileVarIDs.append(varID)
                 if submitters:
@@ -547,7 +587,7 @@ def create_tab5(EP, workbook, worksheet0, worksheetStat0, count):
     print_stats2file(worksheetStat0, count, 6, row)
 
 
-def create_tab6(EP, workbook, worksheet0, worksheetStat0, count):
+def create_tab6(EP, EPOrgID, workbook, worksheet0, worksheetStat0, count):
     '''This function creates the Tab#6 Priority (VUSvsLBB)in the Excel file'''
 
     row = 0
@@ -570,8 +610,7 @@ def create_tab6(EP, workbook, worksheet0, worksheetStat0, count):
 
             if ('Uncertain significance' in ClinSigList) \
                 and ('Likely benign' in ClinSigList or 'Benign' in ClinSigList) \
-                and varID in HGVSHash and HGVSHash[varID]['GeneSym'] in geneList \
-                and geneHash[HGVSHash[varID]['GeneSym']] in EP:
+                and varID in HGVSHash and HGVSHash[varID]['GeneSym'] in EPGeneHash[EP]:
                 if varID not in p2fileVarIDs:
                     p2fileVarIDs.append(varID)
                 if submitters:
@@ -600,7 +639,7 @@ def create_tab6(EP, workbook, worksheet0, worksheetStat0, count):
     print_stats2file(worksheetStat0, count, 7, row)
 
 
-def create_tab7(EP, workbook, worksheet0, worksheetStat0, count):
+def create_tab7(EP, EPOrgID, workbook, worksheet0, worksheetStat0, count):
     '''This function creates the Tab#7 Priority (multiVUS) in the Excel file'''
 
     row = 0
@@ -633,8 +672,7 @@ def create_tab7(EP, workbook, worksheet0, worksheetStat0, count):
             if counter > 2 and varID in HGVSHash\
                and 'Pathogenic' not in ClinSigList and 'Likely pathogenic' not in ClinSigList \
                and 'Likely benign' not in ClinSigList and 'Benign' not in ClinSigList \
-               and HGVSHash[varID]['GeneSym'] in geneList \
-               and geneHash[HGVSHash[varID]['GeneSym']] in EP:
+               and HGVSHash[varID]['GeneSym'] in EPGeneHash[EP]:
                 if varID not in p2fileVarIDs:
                     p2fileVarIDs.append(varID)
                 if submitters:
@@ -663,7 +701,7 @@ def create_tab7(EP, workbook, worksheet0, worksheetStat0, count):
     print_stats2file(worksheetStat0, count, 8, row)
 
 
-def create_tab8(EP, workbook, worksheet0, worksheetStat0, count):
+def create_tab8(EP, EPOrgID, workbook, worksheet0, worksheetStat0, count):
     '''This function creates the Tab#8 Priority (noCriteriaPLP) in the Excel file'''
 
     row = 0
@@ -694,8 +732,7 @@ def create_tab8(EP, workbook, worksheet0, worksheetStat0, count):
 
             if unique_subs != [] and varID in HGVSHash\
                and 'practice guideline' not in ReviewStatus and 'criteria provided, single submitter' not in ReviewStatus \
-               and HGVSHash[varID]['GeneSym'] in geneList \
-               and geneHash[HGVSHash[varID]['GeneSym']] in EP:
+               and HGVSHash[varID]['GeneSym'] in EPGeneHash[EP]:
                 if varID not in p2fileVarIDs:
                     p2fileVarIDs.append(varID)
                 if submitters:
@@ -798,15 +835,16 @@ def print_stats2file(worksheetStat0, count, column, row):
 
 def main():
 
-    inputFile1 = 'ClinVarVariationRelease_00-latest.xml.gz'
+    inputFile1 = 'ClinVarVariationRelease_00-latest_weekly.xml.gz'
     inputFile2 = 'submission_summary.txt.gz'
     inputFile3 = 'variation_allele.txt.gz'
     inputFile4 = 'variant_summary.txt.gz'
-    geneFile = 'EP_GeneList.txt'
+    # geneFile = 'EP_GeneList.txt'
+    geneFile = "EP_GeneList.xlsx"
 
     dir = 'ClinVarExpertPanelReports'
 
-    get_file(inputFile1, '/pub/clinvar/xml/clinvar_variation/')
+    get_file(inputFile1, '/pub/clinvar/xml/clinvar_variation/weekly_release/')
     date = get_file(inputFile2, '/pub/clinvar/tab_delimited/')
     get_file(inputFile3, '/pub/clinvar/tab_delimited/')
     get_file(inputFile4, '/pub/clinvar/tab_delimited/')
@@ -821,7 +859,7 @@ def main():
     create_scvHash(inputFile2)
     create_a2vHash(inputFile3)
     create_HGVSHash(inputFile4)
-    create_geneList(geneFile)
+    create_geneList2(geneFile)
 
     create_files(ExcelDir, excelFile, date, statFile)
 

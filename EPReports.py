@@ -117,10 +117,6 @@ def create_scvHash(gzfile):
                     revStat = col[6]
 
                     submitter = name_mangle(col[9])
-                    submitter = submitter.rstrip()
-                    submitter = re.sub('[^0-9a-zA-Z]+', '_', submitter)
-
-                    submitter = submitter[0:45]
 
                     SCV = col[10]
                     accession = col[10].split('.', 1)[0]

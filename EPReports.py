@@ -554,7 +554,7 @@ def create_tab5(EP, EPOrgID, workbook, worksheet0, worksheetStat0, count):
 
             if ('Pathogenic' in ClinSigList or 'Likely pathogenic' in ClinSigList) \
                 and ('Uncertain significance' in ClinSigList or 'Likely benign' in ClinSigList or 'Benign' in ClinSigList) \
-                and varID in HGVSHash and HGVSHash[varID]['GeneSym'] in EPGeneHash[EP]:
+                and varID in HGVSHash and EP in EPGeneHash and HGVSHash[varID]['GeneSym'] in EPGeneHash[EP]:
                 if varID not in p2fileVarIDs:
                     p2fileVarIDs.append(varID)
                 if submitters:
@@ -606,7 +606,7 @@ def create_tab6(EP, EPOrgID, workbook, worksheet0, worksheetStat0, count):
 
             if ('Uncertain significance' in ClinSigList) \
                 and ('Likely benign' in ClinSigList or 'Benign' in ClinSigList) \
-                and varID in HGVSHash and HGVSHash[varID]['GeneSym'] in EPGeneHash[EP]:
+                and varID in HGVSHash and EP in EPGeneHash and HGVSHash[varID]['GeneSym'] in EPGeneHash[EP]:
                 if varID not in p2fileVarIDs:
                     p2fileVarIDs.append(varID)
                 if submitters:
@@ -668,7 +668,7 @@ def create_tab7(EP, EPOrgID, workbook, worksheet0, worksheetStat0, count):
             if counter > 2 and varID in HGVSHash\
                and 'Pathogenic' not in ClinSigList and 'Likely pathogenic' not in ClinSigList \
                and 'Likely benign' not in ClinSigList and 'Benign' not in ClinSigList \
-               and HGVSHash[varID]['GeneSym'] in EPGeneHash[EP]:
+               and EP in EPGeneHash and HGVSHash[varID]['GeneSym'] in EPGeneHash[EP]:
                 if varID not in p2fileVarIDs:
                     p2fileVarIDs.append(varID)
                 if submitters:
@@ -728,7 +728,7 @@ def create_tab8(EP, EPOrgID, workbook, worksheet0, worksheetStat0, count):
 
             if unique_subs != [] and varID in HGVSHash\
                and 'practice guideline' not in ReviewStatus and 'criteria provided, single submitter' not in ReviewStatus \
-               and HGVSHash[varID]['GeneSym'] in EPGeneHash[EP]:
+               and EP in EPGeneHash and HGVSHash[varID]['GeneSym'] in EPGeneHash[EP]:
                 if varID not in p2fileVarIDs:
                     p2fileVarIDs.append(varID)
                 if submitters:
@@ -783,14 +783,15 @@ def print_variants(worksheet, row, varID, j, headerSubs, varSubs, i):
     row += 1
     worksheet.write(row, 0, varID)
 
-    if HGVSHash[varID]['GeneSym']:
-        worksheet.write(row, 1, HGVSHash[varID]['GeneSym'])
+    if varID in HGVSHash:
+        if HGVSHash[varID]['GeneSym']:
+            worksheet.write(row, 1, HGVSHash[varID]['GeneSym'])
 
-    if HGVSHash[varID]['Phenotype']:
-        worksheet.write(row, 2, HGVSHash[varID]['Phenotype'])
+        if HGVSHash[varID]['Phenotype']:
+            worksheet.write(row, 2, HGVSHash[varID]['Phenotype'])
 
-    if HGVSHash[varID]['HGVSname']:
-        worksheet.write(row, 3, HGVSHash[varID]['HGVSname'])
+        if HGVSHash[varID]['HGVSname']:
+            worksheet.write(row, 3, HGVSHash[varID]['HGVSname'])
 
     if j == 5:
         #Convert date from YYYYMMDD -> MM/DD/YYYY

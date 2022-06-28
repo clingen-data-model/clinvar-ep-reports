@@ -6,7 +6,7 @@ import sys
 import gzip
 import numbers
 import re
-import xlrd
+from openpyxl import load_workbook
 import xlsxwriter
 
 orgDict = {}
@@ -220,16 +220,19 @@ def create_geneList2(vcep_org_file_xlsx):
     organization id -> email address pairs.
     """
     orgs = {}
-    wb = xlrd.open_workbook(vcep_org_file_xlsx)
-    sheet = wb.sheet_by_index(0)
+    wb = load_workbook(filename = vcep_org_file_xlsx)
+    ws = wb["Sheet1"]
 
-    assert sheet.cell_value(0, 0) == "Gene", \
+    assert ws['A1'].value == "Gene", \
         "Spreadsheet " + vcep_org_file_xlsx + " is not in the format expected by this program"
 
-    for i in range(1, sheet.nrows):
-        geneSym = sheet.cell_value(i, 0)
-        orgName = sheet.cell_value(i, 1)
-        orgID = sheet.cell_value(i, 2)
+    for row in ws.iter_rows(min_row=2, max_col=3, values_only=True):
+        if row[0] == None:
+            break
+    
+        geneSym = row[0]
+        orgName = row[1]
+        orgID = row[2]
         geneList.append(geneSym)
         submitter = name_mangle(orgName)
         if isinstance(orgID, numbers.Number):
@@ -240,10 +243,10 @@ def create_geneList2(vcep_org_file_xlsx):
                     break
         else:
             value = 'None'
-
+        
         if submitter not in EPList:
             EPList[submitter] = value
-
+        
         if submitter in EPGeneHash:
             EPGeneHash[submitter].append(geneSym)
         else:
@@ -836,22 +839,21 @@ def main():
     inputFile2 = 'submission_summary.txt.gz'
     inputFile3 = 'variation_allele.txt.gz'
     inputFile4 = 'variant_summary.txt.gz'
-    # geneFile = 'EP_GeneList.txt'
     geneFile = "EP_GeneList.xlsx"
 
     dir = 'ClinVarExpertPanelReports'
-
+    
     get_file(inputFile1, '/pub/clinvar/xml/clinvar_variation/weekly_release/')
     date = get_file(inputFile2, '/pub/clinvar/tab_delimited/')
     get_file(inputFile3, '/pub/clinvar/tab_delimited/')
     get_file(inputFile4, '/pub/clinvar/tab_delimited/')
-
+    
     ExcelDir = make_directory(dir, date)
-
+    
     excelFile = 'EP_Updates_' + date + '.xlsx'
-
+    
     statFile = '_EPReportsStats_' + date + '.xlsx'
-
+    
     create_orgDict(inputFile1)
     create_scvHash(inputFile2)
     create_a2vHash(inputFile3)

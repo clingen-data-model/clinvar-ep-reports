@@ -94,7 +94,7 @@ def create_orgDict(gzfile):
                 elem.clear()
 
     input.close()
-    os.remove(gzfile)
+    # os.remove(gzfile)
     return(orgDict)
 
 
@@ -139,7 +139,7 @@ def create_scvHash(gzfile):
                         scvHash[varID][SCV] = {'ClinSig':clinSig, 'DateLastEval':dateLastEval, 'Submitter':submitter, 'ReviewStatus':revStat}
 
     input.close()
-    os.remove(gzfile)
+    # os.remove(gzfile)
     return(scvHash, EPHash, EPList)
 
 
@@ -164,7 +164,7 @@ def create_a2vHash(gzfile):
                         a2vHash[alleleID] = varID
 
     input.close()
-    os.remove(gzfile)
+    # os.remove(gzfile)
     return(a2vHash)
 
 
@@ -190,7 +190,7 @@ def create_HGVSHash(gzfile):
                         HGVSHash[a2vHash[alleleID]] = {'VarType':type, 'HGVSname':HGVSname, 'GeneSym':geneSym,'Phenotype':phenotype}
 
     input.close()
-    os.remove(gzfile)
+    # os.remove(gzfile)
     return(HGVSHash)
 
 
@@ -843,10 +843,11 @@ def main():
 
     dir = 'ClinVarExpertPanelReports'
     
-    get_file(inputFile1, '/pub/clinvar/xml/clinvar_variation/weekly_release/')
-    date = get_file(inputFile2, '/pub/clinvar/tab_delimited/')
-    get_file(inputFile3, '/pub/clinvar/tab_delimited/')
-    get_file(inputFile4, '/pub/clinvar/tab_delimited/')
+    # get_file(inputFile1, '/pub/clinvar/xml/clinvar_variation/weekly_release/')
+    # date = get_file(inputFile2, '/pub/clinvar/tab_delimited/')
+    date = "06-03-2024"
+    # get_file(inputFile3, '/pub/clinvar/tab_delimited/')
+    # get_file(inputFile4, '/pub/clinvar/tab_delimited/')
     
     ExcelDir = make_directory(dir, date)
     
